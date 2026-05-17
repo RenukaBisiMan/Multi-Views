@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🚀 Auto-Refresh Multi-View Bot</title>
+    <style>
+        :root {
+            --primary: #667eea;
+            --success: #4CAF50;
+            --danger: #f44336;
+            --warning: #ff9800;
+            --dark: #2c3e50;
+        }
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        h1 { text-align: center; margin-bottom: 10px; }
+        .subtitle { text-align: center; opacity: 0.9; margin-bottom: 30px; }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        input[type="url"], input[type="number"], select {
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            border: 2px solid rgba(255,255,255,0.2);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
+            margin-bottom: 15px;
+        }
+        input::placeholder { color: rgba(255,255,255,0.7); }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--success);
+            box-shadow: 0 0 20px rgba(76,175,80,0.3);
+        }
+        
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        button {
+            padding: 15px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+        .start-btn {
+            background: linear-gradient(45deg, var(--success), #45a049);
+            color: white;
+        }
+        .start-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(76,175,80,0.4); }
+        .stop-btn {
+            background: linear-gradient(45deg, var(--danger), #da190b);
+            color: white;
+        }
+        .stop-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(244,67,54,0.4); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        .stat-number { font-size: 2em; font-weight: bold; margin-bottom: 5px; }
+        .stat-label { opacity: 0.9; font-size: 0.9em; }
+        
+        .slot-display {
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            padding: 20px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+        }
+        .slot { 
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 12px;
+            margin: 4px 0;
+            background: rgba(255,255,255,0.1);
+            border-radius: 8px;
+            font-family: monospace;
+        }
+        .status { 
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .status.running { background: rgba(76,175,80,0.3); }
+        .status.stopped { background: rgba(255,152,0,0.3); }
+        .status.error { background: rgba(244,67,54,0.3); }
+        
+        @media (max-width: 768px) {
+            .controls { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Auto-Refresh Multi-View Bot</h1>
+        <p class="subtitle">Generates 500-600 views with 10s auto-refresh • Deploy to Railway</p>
+        
+        <div class="input-group">
+            <input type="url" id="targetUrl" placeholder="https://your-link-here.com" required>
+            <label><input type="checkbox" id="addReferrer" checked> Add tracking parameter (?ref=multiview)</label>
+        </div>
+        
+        <div class="controls">
+            <div>
+                <input type="number" id="tabCount" value="550" min="100" max="800" placeholder="Number of tabs">
+            </div>
+            <div>
+                <input type="number" id="refreshInterval" value="10" min="5" max="60" placeholder="Refresh every X seconds">
+            </div>
+        </div>
+        
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="activeTabs">0</div>
+                <div class="stat-label">Active Tabs</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="totalViews">0</div>
+                <div class="stat-label">Total Views</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="refreshRate">0</div>
+                <div class="stat-label">Refreshes/sec</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="uptime">0s</div>
+                <div class="stat-label">Uptime</div>
+            </div>
+        </div>
+        
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px;">
+            <button class="start-btn" onclick="startBot()">▶️ START BOT</button>
+            <button class="stop-btn" onclick="stopBot()" disabled>⏹️ STOP BOT</button>
+        </div>
+        
+        <div class="status stopped" id="status">Ready to generate massive views! 🚀</div>
+        
+        <div class="slot-display" id="slotDisplay">
+            <strong>🎰 Active Slots (First 20 shown):</strong>
+        </div>
+    </div>
+
+    <script>
+        let botRunning = false;
+        let tabs = [];
+        let refreshInterval = 10000; // 10 seconds
+        let viewCount = 0;
+        let startTime = 0;
+        let refreshTimer = null;
+        let statusTimer = null;
+
+        function startBot() {
+            const url = document.getElementById('targetUrl').value;
+            const tabCount = parseInt(document.getElementById('tabCount').value);
+            refreshInterval = parseInt(document.getElementById('refreshInterval').value) * 1000;
+            
+            if (!url || !isValidUrl(url)) {
+                showStatus('❌ Invalid URL! Please enter a valid https:// link', 'error');
+                return;
+            }
+            
+            botRunning = true;
+            startTime = Date.now();
+            tabs = [];
+            viewCount = 0;
+            
+            document.querySelector('.start-btn').disabled = true;
+            document.querySelector('.stop-btn').disabled = false;
+            document.getElementById('status').className = 'status running';
+            
+            createSlots(tabCount, url);
+            startRefreshCycle();
+            startStatusUpdate();
+            
+            showStatus(`✅ Bot started! ${tabCount} tabs • Refresh: ${refreshInterval/1000}s`, 'running');
+        }
+        
+        function stopBot() {
+            botRunning = false;
+            if (refreshTimer) clearTimeout(refreshTimer);
+            if (statusTimer) clearInterval(statusTimer);
+            
+            document.querySelector('.start-btn').disabled = false;
+            document.querySelector('.stop-btn').disabled = true;
+            document.getElementById('status').className = 'status stopped';
+            
+            showStatus(`⏹️ Bot stopped! Total views generated: ${viewCount.toLocaleString()}`, 'stopped');
+            updateStats();
+        }
+        
+        function createSlots(count, baseUrl) {
+            const slotDisplay = document.getElementById('slotDisplay');
+            const addReferrer = document.getElementById('addReferrer').checked;
+            
+            for (let i = 0; i < count; i++) {
+                const slotId = `slot-${i}-${Date.now()}`;
+                const url = addReferrer ? 
+                    `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}ref=multiview-${i}&slot=${slotId}` :
+                    baseUrl;
+                
+                tabs.push({
+                    id: slotId,
+                    url: url,
+                    tab: null,
+                    refreshes: 0,
+                    slotNum: i + 1
+                });
+                
+                // Open tab
+                const newTab = window.open(url, slotId);
+                if (newTab) {
+                    tabs[tabs.length - 1].tab = newTab;
+                }
+            }
+            
+            // Show first 20 slots
+            updateSlotDisplay();
+        }
+        
+        function startRefreshCycle() {
+            function refreshAll() {
+                if (!botRunning) return;
+                
+                tabs.forEach(slot => {
+                    if (slot.tab && !slot.tab.closed) {
+                        try {
+                            slot.tab.location.href = slot.url;
+                            slot.refreshes++;
+                            viewCount++;
+                        } catch (e) {
+                            // Tab closed or blocked
+                        }
+                    }
+                });
+                
+                updateStats();
+                refreshTimer = setTimeout(refreshAll, refreshInterval);
+            }
+            refreshAll();
+        }
+        
+        function updateSlotDisplay() {
+            const slotDisplay = document.getElementById('slotDisplay');
+            let html = '<strong>🎰 Active Slots (First 20 shown):</strong><br>';
+            
+            tabs.slice(0, 20).forEach(slot => {
+                const status = slot.tab && !slot.tab.closed ? '🟢 LIVE' : '🔴 DEAD';
+                html += `<div class="slot">
+                    Slot #${slot.slotNum} ${status} 
+                    <span>${slot.refreshes} refreshes</span>
+                </div>`;
+            });
+            
+            if (tabs.length > 20) {
+                html += `<div style="text-align: center; opacity: 0.7;">
+                    ... and ${tabs.length - 20} more slots
+                </div>`;
+            }
+            
+            slotDisplay.innerHTML = html;
+        }
+        
+        function startStatusUpdate() {
+            statusTimer = setInterval(() => {
+                if (botRunning) {
+                    updateStats();
+                    updateSlotDisplay();
+                }
+            }, 1000);
+        }
+        
+        function updateStats() {
+            const activeTabs = tabs.filter(t => t.tab && !t.tab.closed).length;
+            const uptime = Math.floor((Date.now() - startTime) / 1000);
+            const refreshesPerSec = (viewCount / uptime || 0).toFixed(1);
+            
+            document.getElementById('activeTabs').textContent = activeTabs;
+            document.getElementById('totalViews').textContent = viewCount.toLocaleString();
+            document.getElementById('refreshRate').textContent = refreshesPerSec;
+            document.getElementById('uptime').textContent = uptime + 's';
+        }
+        
+        function showStatus(message, type) {
+            document.getElementById('status').textContent = message;
+            document.getElementById('status').className = `status ${type}`;
+        }
+        
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return string.startsWith('http');
+            } catch {
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>
